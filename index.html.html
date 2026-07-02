@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaseFroggy | Build • Fight • Grow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        baseBlue: '#0052FF',
+                        frogGreen: '#2E8B57',
+                        pondDark: '#051A14',
+                        goldCoin: '#FFD700',
+                        battleRed: '#DC2626',
+                        labPurple: '#7C3AED',
+                    },
+                    fontFamily: {
+                        game: ['Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        html {
+            scroll-behavior: smooth;
+            font-size: 19px;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #051A14 0%, #002666 50%, #1A5D3A 100%);
+            background-attachment: fixed;
+            color: #ffffff;
+            line-height: 1.7;
+        }
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.85);
+            min-height: 100vh;
+            padding: 0 20px 60px;
+        }
+        .section {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        h1 {
+            font-size: 48px;
+            color: #2E8B57;
+            text-align: center;
+            margin: 0;
+            padding: 40px 0 20px;
+        }
+        h2 {
+            font-size: 32px;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        h3 {
+            font-size: 26px;
+            color: #ffffff;
+            margin: 25px 0 15px;
+        }
+        ul {
+            padding-left: 25px;
+        }
+        li {
+            margin: 10px 0;
+        }
+        .roadmap-phase {
+            margin: 25px 0;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            border-left: 5px solid;
+        }
+        .phase1 { border-color: #2E8B57; }
+        .phase2 { border-color: #FFD700; }
+        .phase3 { border-color: #DC2626; }
+        footer {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0,0,0,0.9);
+            margin-top: 50px;
+            border-top: 2px solid rgba(255,255,255,0.1);
+        }
+        a {
+            color: #FFD700;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .tab {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            width: 100%;
+            text-align: left;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.1);
+        }
+        .tab.active {
+            background: #2E8B57;
+            color: #ffffff;
+            border-color: #3BA76F;
+            box-shadow: 0 0 10px rgba(46, 139, 87, 0.6);
+        }
+        .tab-content {
+            display: none;
+            margin-top: 30px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: rgba(20, 30, 40, 0.92);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 30px;
+        }
+        button {
+            cursor: pointer;
+            font-size: 19px;
+            font-weight: bold;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .notification {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 9999;
+            transform: translateX(450px);
+            transition: transform 0.3s ease;
+            background: #ffffff;
+            color: #111111;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            padding: 16px 20px;
+            max-width: 350px;
+            font-size: 18px;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+
+        <!-- Notification -->
+        <div id="notification" class="notification">
+            <p id="notifText"></p>
+        </div>
+
+        <!-- Judul Utama -->
+        <h1>🐸 BASEFROGGY</h1>
+        <p class="text-center text-xl mb-10">Build • Fight • Grow • Conquer</p>
+
+        <!-- Pengantar Game -->
+        <div class="section">
+            <h2>🎮 About the Game</h2>
+            <p>
+                <strong>BaseFroggy</strong> is an exciting strategy video game built on the Base blockchain network. You step into the role of a leader in a vast swamp world, where you must build your village, gather resources, train your army of frogs, and fight against other players to expand your territory.
+            </p>
+            <p>
+                Every decision you make shapes your kingdom. Start small, upgrade your buildings, unlock new technologies, and become the most powerful ruler in the land. All progress is saved securely on the blockchain, meaning your achievements are yours forever.
+            </p>
+        </div>
+
+        <!-- Game Features -->
+        <div class="section">
+            <h2>✨ Main Features</h2>
+            <ul>
+                <li><strong>🏗️ Build & Upgrade:</strong> Construct mines, water pumps, barracks, and more to boost your production and strength.</li>
+                <li><strong>📦 Resource Management:</strong> Collect Gold, Water, and Food to grow your village and train troops.</li>
+                <li><strong>⚔️ Army System:</strong> Train Warrior Frogs and Elite Frogs, each with unique stats and abilities.</li>
+                <li><strong>💥 Battle Mode:</strong> Fight against enemies to earn rewards, experience, and increase your rank.</li>
+                <li><strong>📅 Daily Missions:</strong> Log in every day to claim free rewards and bonuses.</li>
+                <li><strong>🔗 Blockchain Powered:</strong> Connect your wallet, own your progress, and trade assets in the future.</li>
+            </ul>
+        </div>
+
+        <!-- Bagian Permainan Interaktif -->
+        <div class="section">
+            <h2>🎮 Play the Game</h2>
+
+            <!-- Info Pemain -->
+            <div class="card">
+                <h3 class="text-center mb-4">Your Status</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span>Wallet:</span>
+                        <span id="walletDisplay">Not Connected</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Gold:</span>
+                        <span id="gold" class="text-goldCoin">500</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Water:</span>
+                        <span id="water" class="text-blue-300">500</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Food:</span>
+                        <span id="food" class="text-yellow-300">150</span>
+                    </div>
+                </div>
+                <button onclick="connectWallet()" class="mt-6 bg-baseBlue">Connect Wallet</button>
+            </div>
+
+            <!-- Menu Navigasi -->
+            <div class="space-y-3">
+                <button class="tab active" onclick="openTab('village')">🏰 Village</button>
+                <button class="tab" onclick="openTab('army')">⚔️ Army</button>
+                <button class="tab" onclick="openTab('battle')">💥 Battle</button>
+                <button class="tab" onclick="openTab('missions')">📋 Missions</button>
+                <button class="tab" onclick="openTab('shop')">🛒 Shop</button>
+            </div>
+
+            <!-- Konten Permainan -->
+            <div>
+                <!-- Village Tab -->
+                <div id="village" class="tab-content active">
+                    <div class="card">
+                        <h3 class="text-goldCoin">⛏️ Gold Mine</h3>
+                        <p>Level: <span id="mineLevel">1</span></p>
+                        <p>Production: +<span id="mineRate">5</span> gold / minute</p>
+                        <p class="my-3">Upgrade Cost: 200 Water</p>
+                        <button onclick="upgradeMine()" class="bg-amber-700">Upgrade</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-blue-300">💧 Water Pump</h3>
+                        <p>Level: <span id="pumpLevel">1</span></p>
+                        <p>Production: +<span id="pumpRate">10</span> water / minute</p>
+                        <p class="my-3">Upgrade Cost: 150 Gold</p>
+                        <button onclick="upgradePump()" class="bg-sky-600">Upgrade</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-red-400">🏗️ Barracks</h3>
+                        <p>Level: <span id="barrackLevel">1</span></p>
+                        <p>Capacity: <span id="barrackCap">20</span> troops</p>
+                        <p class="my-3">Upgrade Cost: 300 Gold</p>
+                        <button onclick="upgradeBarracks()" class="bg-red-700">Upgrade</button>
+                    </div>
+                </div>
+
+                <!-- Army Tab -->
+                <div id="army" class="tab-content">
+                    <div class="card">
+                        <h3 class="text-frogGreen">🐸 Warrior Frog</h3>
+                        <p>Attack: 10 | Defense: 5</p>
+                        <p>Cost: 10 Food</p>
+                        <p class="my-3">Owned: <span id="warriorCount">0</span></p>
+                        <button onclick="trainWarrior()" class="bg-frogGreen">Train 1</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-battleRed">🐸⚔️ Elite Frog</h3>
+                        <p>Attack: 25 | Defense: 15</p>
+                        <p>Cost: 30 Food</p>
+                        <p class="my-3">Owned: <span id="eliteCount">0</span></p>
+                        <button onclick="trainElite()" class="bg-battleRed">Train 1</button>
+                    </div>
+                    <div class="card text-center">
+                        <p class="text-xl">Total Army Power: <span id="totalPower" class="text-goldCoin font-bold">0</span></p>
+                    </div>
+                </div>
+
+                <!-- Battle Tab -->
+                <div id="battle" class="tab-content">
+                    <div class="card text-center">
+                        <div class="text-7xl mb-6">⚔️🐸💥</div>
+                        <p class="text-xl mb-3">Your Power: <span id="battlePower" class="text-goldCoin font-bold">0</span></p>
+                        <p class="text-xl mb-5">Win Chance: <span id="winChance" class="text-frogGreen font-bold">0%</span></p>
+                        <button onclick="startBattle()" class="bg-battleRed py-4 text-2xl">Start Battle</button>
+                        <div id="battleResult" class="mt-7 p-5 rounded-lg hidden text-xl font-semibold"></div>
+                    </div>
+                </div>
+
+                <!-- Missions Tab -->
+                <div id="missions" class="tab-content">
+                    <div class="card flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-xl">Daily Login</h4>
+                            <p class="text-lg opacity-90">Reward: 200 Gold + 100 Water</p>
+                        </div>
+                        <button id="dailyBtn" onclick="claimDaily()" class="bg-goldCoin text-black px-5 py-2 w-auto">Claim</button>
+                    </div>
+                    <div class="card flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-xl">First Battle</h4>
+                            <p class="text-lg opacity-90">Reward: 150 Food</p>
+                        </div>
+                        <button id="battleQuestBtn" onclick="claimBattleQuest()" class="bg-green-600 px-5 py-2 w-auto">Complete</button>
+                    </div>
+                </div>
+
+                <!-- Shop Tab -->
+                <div id="shop" class="tab-content">
+                    <div class="card text-center">
+                        <h3 class="text-xl">+500 Gold</h3>
+                        <p class="my-3">Cost: 100 Water</p>
+                        <button onclick="buyGold()" class="bg-amber-600">Buy Now</button>
+                    </div>
+                    <div class="card text-center">
+                        <h3 class="text-xl">+300 Food</h3>
+                        <p class="my-3">Cost: 150 Gold</p>
+                        <button onclick="buyFood()" class="bg-yellow-600">Buy Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How to Play -->
+        <div class="section">
+            <h2>📖 How to Play</h2>
+            <h3>Step 1: Connect Your Wallet</h3>
+            <p>Use MetaMask or Coinbase Wallet to connect to the Base network. This keeps your progress safe and allows you to access the game anytime.</p>
+
+            <h3>Step 2: Build Your Village</h3>
+            <p>Start by upgrading your Gold Mine and Water Pump to generate resources automatically. More resources mean faster growth!</p>
+
+            <h3>Step 3: Train Your Army</h3>
+            <p>Use Food to train Warrior Frogs and Elite Frogs. A stronger army gives you a higher chance to win battles and earn big rewards.</p>
+
+            <h3>Step 4: Fight & Grow</h3>
+            <p>Go into battle, defeat opponents, and collect Gold and Food. Use these to expand your village and unlock new features.</p>
+        </div>
+
+        <!-- Roadmap -->
+        <div class="section">
+            <h2>🗺️ Development Roadmap</h2>
+
+            <div class="roadmap-phase phase1">
+                <h3>✅ Phase 1: Launch & Core Gameplay</h3>
+                <ul>
+                    <li>Full village building and resource system</li>
+                    <li>Basic army training and battle mechanics</li>
+                    <li>Wallet connection on Base blockchain</li>
+                    <li>Daily missions and reward system</li>
+                    <li>Resource shop and trading basics</li>
+                </ul>
+            </div>
+
+            <div class="roadmap-phase phase2">
+                <h3>🚧 Phase 2: Expansion & Upgrades</h3>
+                <ul>
+                    <li>New building types and research lab</li>
+                    <li>Special units and powerful equipment</li>
+                    <li>Global leaderboard and rankings</li>
+                    <li>Defense system to protect your village</li>
+                    <li>Improved battle animations and effects</li>
+                </ul>
+            </div>
+
+            <div class="roadmap-phase phase3">
+                <h3>🔜 Phase 3: Massive Multiplayer</h3>
+                <ul>
+                    <li>Alliance system and group wars</li>
+                    <li>Player-to-player marketplace</li>
+                    <li>Seasonal events and limited-time rewards</li>
+                    <li>Special maps and boss battles</li>
+                    <li>Mobile version and cross-platform support</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer - Kontak & Sosial Media -->
+        <footer>
+            <p>© 2026 BaseFroggy Game. All rights reserved.</p>
+            <p>Follow us on X (Twitter): <a href="https://x.com/BaseFroggy" target="_blank">@BaseFroggy</a></p>
+            <p>Official Contact: <a href="mailto:info@basefroggy.com">info@basefroggy.com</a></p>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- Game Variables ---
+        let web3, userAccount, isConnected = false;
+        let gold = 500, water = 500, food = 150;
+        let mineLevel = 1, mineRate = 5;
+        let pumpLevel = 1, pumpRate = 10;
+        let barrackLevel = 1, barrackCap = 20;
+        let warriors = 0, elites = 0;
+        let dailyClaimed = false, battleQuestDone = false;
+
+        // --- Tab Switch ---
+        function openTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            updateUI();
+        }
+
+        // --- Show Notification ---
+        function showNotification(text) {
+            const el = document.getElementById('notification');
+            document.getElementById('notifText').textContent = text;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        // --- Connect Wallet ---
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert("❌ Please install MetaMask or Coinbase Wallet first!");
+                return;
+            }
+            try {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x2105',
+                        chainName: 'Base Mainnet',
+                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                        rpcUrls: ['https://mainnet.base.org'],
+                        blockExplorerUrls: ['https://basescan.org']
+                    }]
+                });
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0];
+                isConnected = true;
+                document.getElementById('walletDisplay').textContent = userAccount.slice(0, 8) + "...";
+                showNotification("✅ Wallet connected successfully!");
+                startResourceTimer();
+            } catch (err) {
+                alert("❌ Connection failed: " + err.message);
+            }
+        }
+
+        // --- Auto Resource Generation ---
+        function startResourceTimer() {
+            setInterval(() => {
+                if (!isConnected) return;
+                gold = Math.min(gold + mineRate, 99999);
+                water = Math.min(water + pumpRate, 99999);
+                updateUI();
+            }, 60000);
+        }
+
+        // --- Update All Display ---
+        function updateUI() {
+            document.getElementById('gold').textContent = gold;
+            document.getElementById('water').textContent = water;
+            document.getElementById('food').textContent = food;
+            document.getElementById('mineLevel').textContent = mineLevel;
+            document.getElementById('mineRate').textContent = mineRate;
+            document.getElementById('pumpLevel').textContent = pumpLevel;
+            document.getElementById('pumpRate').textContent = pumpRate;
+            document.getElementById('barrackLevel').textContent = barrackLevel;
+            document.getElementById('barrackCap').textContent = barrackCap;
+            document.getElementById('warriorCount').textContent = warriors;
+            document.getElementById('eliteCount').textContent = elites;
+
+            const totalPower = (warriors * 10) + (elites * 25);
+            document.getElementById('totalPower').textContent = totalPower;
+            document.getElementById('battlePower').textContent = totalPower;
+            document.getElementById('winChance').textContent = Math.min(95, Math.max(20, Math.round((totalPower / (totalPower + 150)) * 100))) + "%";
+        }
+
+        // --- Upgrade Buildings ---
+        function upgradeMine() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (water >= 200) {
+                water -= 200;
+                mineLevel++;
+                mineRate += 5;
+                showNotification("✅ Gold Mine upgraded successfully!");
+                updateUI();
+            } else {
+                alert("❌ Not enough Water!");
+            }
+        }
+
+        function upgradePump() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (gold >= 150) {
+                gold -= 150;
+                pumpLevel++;
+                pumpRate += 8;
+                showNotification("✅ Water Pump upgraded successfully!");
+                updateUI();
+            } else {
+                alert("❌ Not enough Gold!");
+            }
+        }
+
+        function upgradeBarracks() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (gold >= 300) {
+                gold -= 300;
+                barrackLevel++;
+                barrackCap += 20;
+                showNotification("✅ Barracks upgraded successfully!");
+                updateUI();
+            } else {
+                alert("❌ Not enough Gold!");
+            }
+        }
+
+        // --- Train Army ---
+        function trainWarrior() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (warriors + elites >= barrackCap) return alert("❌ Barracks capacity is full!");
+            if (food >= 10) {
+                food -= 10;
+                warriors++;
+                showNotification("✅ Warrior Frog trained!");
+                updateUI();
+            } else {
+                alert("❌ Not enough Food!");
+            }
+        }
+
+        function trainElite() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (warriors + elites >= barrackCap) return alert("❌ Barracks capacity is full!");
+            if (food >= 30) {
+                food -= 30;
+                elites++;
+                showNotification("✅ Elite Frog trained!");
+                updateUI();
+            } else {
+                alert("❌ Not enough Food!");
+            }
+        }
+
+        // --- Battle System ---
+        function startBattle() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            const power = (warriors * 10) + (elites * 25);
+            if (power < 20) return alert("❌ Your army is too weak! Train more troops first.");
+
+            const winChance = Math.min(95, Math.max(20, Math.round((power / (power + 150)) * 100)));
+            const resultEl = document.getElementById('battleResult');
+
+            if (Math.random() * 100 < winChance) {
+                const rewardGold = Math.floor(Math.random() * 300) + 100;
+                const rewardFood = Math.floor(Math.random() * 100) + 50;
+                gold += rewardGold;
+                food += rewardFood;
+                resultEl.style.display = "block";
+                resultEl.className = "mt-7 p-5 rounded-lg bg-green-700 text-white text-xl font-semibold";
+                resultEl.textContent = `🎉 Victory! You earned ${rewardGold} Gold and ${rewardFood} Food!`;
+                showNotification("✅ Battle won!");
+                if (!battleQuestDone) battleQuestDone = true;
+            } else {
+                const loseGold = Math.floor(Math.random() * 50) + 20;
+                gold = Math.max(0, gold - loseGold);
+                resultEl.style.display = "block";
+                resultEl.className = "mt-7 p-5 rounded-lg bg-red-700 text-white text-xl font-semibold";
+                resultEl.textContent = `💀 Defeat! You lost ${loseGold} Gold.`;
+                showNotification("❌ Battle lost!");
+            }
+            updateUI();
+        }
+
+        // --- Claim Rewards ---
+        function claimDaily() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (dailyClaimed) return alert("✅ Already claimed today!");
+            gold += 200;
+            water += 100;
+            dailyClaimed = true;
+            document.getElementById('dailyBtn').textContent = "Claimed";
+            document.getElementById('dailyBtn').classList.add("opacity-50");
+            showNotification("✅ Daily reward claimed!");
+            updateUI();
+        }
+
+        function claimBattleQuest() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (!battleQuestDone) return alert("⚠️ Win one battle first!");
+            food += 150;
+            document.getElementById('battleQuestBtn').textContent = "Claimed";
+            document.getElementById('battleQuestBtn').classList.add("opacity-50");
+            showNotification("✅ Reward received!");
+            updateUI();
+        }
+
+        // --- Shop Functions ---
+        function buyGold() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (water >= 100) {
+                water -= 100;
+                gold += 500;
+                showNotification("✅ Successfully bought 500 Gold!");
+                updateUI();
+            } else {
+                alert("❌ Not enough Water!");
+            }
+        }
+
+        function buyFood() {
+            if (!isConnected) return alert("⚠️ Connect your wallet first!");
+            if (gold >= 150) {
+                gold -= 150;
+                food += 300;
+                showNotification("✅ Successfully bought 300 Food!");
+                updateUI();
+            } else {
+                alert("❌ Not enough Gold!");
+            }
+        }
+
+        // Initial display update
+        updateUI();
+    </script>
+</body>
+</html>
