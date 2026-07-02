@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaseFroggy | Build • Fight • Grow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        baseBlue: '#0052FF',
+                        frogGreen: '#2E8B57',
+                        pondDark: '#0A231C',
+                        goldCoin: '#FFD700',
+                        woodBrown: '#8B4513',
+                        battleRed: '#DC2626',
+                        labPurple: '#7C3AED',
+                        shieldBlue: '#2563EB',
+                        coinYellow: '#FBBF24',
+                    },
+                    fontFamily: {
+                        game: ['Bebas Neue', 'Arial Black', 'sans-serif'],
+                    },
+                    maxWidth: {
+                        'wide': '1600px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            html {
+                scroll-behavior: smooth;
+                overflow-y: auto;
+                min-height: 100vh;
+                width: 100%;
+            }
+            body {
+                min-height: 100vh;
+                overflow-x: hidden;
+                width: 100%;
+            }
+            .container-wide {
+                width: 100%;
+                max-width: 1600px;
+                margin-left: auto;
+                margin-right: auto;
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+            .glow { filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.6)); }
+            .glow-green { filter: drop-shadow(0 0 12px rgba(46, 139, 87, 0.5)); }
+            .glow-red { filter: drop-shadow(0 0 12px rgba(220, 38, 38, 0.5)); }
+            .glow-purple { filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.5)); }
+            .building-hover { transition: all 0.2s ease; cursor: pointer; }
+            .building-hover:hover { transform: scale(1.02); filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+            .tab { cursor: pointer; transition: all 0.2s ease; }
+            .tab-active { background: #2E8B57; color: white; font-weight: bold; }
+            .resource-card { backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.18); }
+            .btn-upgrade { transition: all 0.2s ease; cursor: pointer; }
+            .btn-upgrade:hover { transform: scale(1.01); }
+            @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+            .frog-animate { animation: float 4s ease-in-out infinite; }
+            @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+            .pulse { animation: pulse 2s infinite; }
+            .notification { position: fixed; top: 20px; right: 20px; z-index: 9999; transform: translateX(400px); transition: transform 0.3s ease; }
+            .notification.show { transform: translateX(0); }
+            button { cursor: pointer !important; }
+            .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); }
+            .modal-content { background-color: #1a1a1a; margin: 10% auto; padding: 2.5rem; border: 1px solid #444; width: 95%; max-width: 450px; border-radius: 12px; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-pondDark via-baseBlue/20 to-frogGreen/30 font-game text-white">
+    <div class="bg-black/55 min-h-screen pb-16 w-full">
+
+        <!-- NOTIFICATION -->
+        <div id="notification" class="notification bg-white/90 text-black p-4 rounded-lg shadow-lg max-w-xs">
+            <p id="notifText"></p>
+        </div>
+
+        <!-- INPUT MODAL -->
+        <div id="inputModal" class="modal">
+            <div class="modal-content">
+                <h3 class="text-2xl font-bold mb-5 text-center">Connect Your Account</h3>
+                <p id="modalLabel" class="mb-4 text-base opacity-85">Enter your username below</p>
+                <input type="text" id="modalInput" class="w-full p-3 mb-5 rounded bg-gray-800 border border-gray-600 text-white text-lg" placeholder="e.g. basefroggy">
+                <div class="flex gap-3 justify-end">
+                    <button onclick="closeModal()" class="px-5 py-2.5 bg-gray-600 rounded hover:bg-gray-500 text-lg">Cancel</button>
+                    <button onclick="confirmInput()" class="px-5 py-2.5 bg-frogGreen rounded hover:bg-green-600 text-lg">Connect</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HEADER -->
+        <header class="sticky top-0 z-50 bg-black/70 backdrop-blur-md border-b border-frogGreen/40 w-full px-4 py-4">
+            <div class="container-wide flex justify-between items-center">
+                <h1 class="text-4xl md:text-5xl font-bold text-frogGreen glow-green">🐸 BASEFROGGY</h1>
+                <div class="flex gap-3 items-center">
+                    <span id="shieldStatus" class="text-base bg-shieldBlue/20 px-3 py-1.5 rounded hidden">🛡️ Protected</span>
+                    <div class="relative group">
+                        <button id="connectWalletBtn" class="bg-baseBlue hover:bg-baseBlue/80 px-6 py-2.5 rounded-lg text-xl font-bold transition min-w-[180px]">
+                            Connect Wallet
+                        </button>
+                        <div id="connectDropdown" class="absolute right-0 mt-3 w-64 bg-black/95 border border-frogGreen/30 rounded-lg shadow-xl hidden group-hover:block z-50">
+                            <button onclick="connectCoinbase()" class="w-full text-left px-5 py-3.5 hover:bg-baseBlue/40 rounded-t-lg flex items-center gap-3 text-lg">
+                                <span>🪙</span> MetaMask / Coinbase
+                            </button>
+                            <button onclick="connectFarcaster()" class="w-full text-left px-5 py-3.5 hover:bg-purple-600/40 flex items-center gap-3 text-lg">
+                                <span>🟣</span> Farcaster / Warpcast
+                            </button>
+                            <button onclick="connectTwitter()" class="w-full text-left px-5 py-3.5 hover:bg-blue-500/40 rounded-b-lg flex items-center gap-3 text-lg">
+                                <span>𝕏</span> X / Twitter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- PLAYER STATUS -->
+        <div class="w-full bg-black/50 relative px-4 py-5">
+            <div class="container-wide grid grid-cols-2 md:grid-cols-5 gap-5">
+                <div class="text-center">
+                    <p class="text-base opacity-80">Network</p>
+                    <p class="text-xl text-baseBlue font-semibold">Base Mainnet</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-base opacity-80">Connected As</p>
+                    <p id="walletDisplay" class="text-xl text-goldCoin truncate">Not Connected</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-base opacity-80">Kingdom Level</p>
+                    <p id="playerLevel" class="text-2xl text-goldCoin font-bold">1</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-base opacity-80">Frog Power</p>
+                    <p id="frogPower" class="text-2xl text-frogGreen font-bold">100</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-base opacity-80">Rank Points</p>
+                    <p id="rankPoints" class="text-2xl text-labPurple font-bold">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESOURCES -->
+        <div class="w-full relative px-4 py-5">
+            <div class="container-wide grid grid-cols-2 md:grid-cols-4 gap-5">
+                <div class="resource-card rounded-lg p-5 text-center bg-white/10">
+                    <p class="text-lg">Gold Coins</p>
+                    <p id="goldAmount" class="text-4xl text-goldCoin font-bold my-2">500</p>
+                    <p class="text-base opacity-75">Max: <span id="goldMax">2000</span></p>
+                </div>
+                <div class="resource-card rounded-lg p-5 text-center bg-white/10">
+                    <p class="text-lg">Pond Water</p>
+                    <p id="waterAmount" class="text-4xl text-blue-300 font-bold my-2">500</p>
+                    <p class="text-base opacity-75">Max: <span id="waterMax">5000</span></p>
+                </div>
+                <div class="resource-card rounded-lg p-5 text-center bg-white/10">
+                    <p class="text-lg">Lily Leaves</p>
+                    <p id="leafAmount" class="text-4xl text-green-200 font-bold my-2">200</p>
+                    <p class="text-base opacity-75">Max: <span id="leafMax">3000</span></p>
+                </div>
+                <div class="resource-card rounded-lg p-5 text-center bg-white/10">
+                    <p class="text-lg">Frog Food</p>
+                    <p id="foodAmount" class="text-4xl text-yellow-300 font-bold my-2">150</p>
+                    <p class="text-base opacity-75">Max: <span id="foodMax">2500</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION TABS -->
+        <div class="w-full sticky top-[85px] z-40 bg-black/40 backdrop-blur-sm relative px-4 py-4">
+            <div class="container-wide flex flex-wrap justify-center gap-3">
+                <button class="tab tab-active px-6 py-3 rounded-lg text-lg" onclick="switchTab('village')">🏰 Village</button>
+                <button class="tab px-6 py-3 rounded-lg bg-white/10 text-lg" onclick="switchTab('army')">⚔️ Army</button>
+                <button class="tab px-6 py-3 rounded-lg bg-white/10 text-lg" onclick="switchTab('research')">🔬 Research</button>
+                <button class="tab px-6 py-3 rounded-lg bg-white/10 text-lg" onclick="switchTab('battle')">💥 Battle</button>
+                <button class="tab px-6 py-3 rounded-lg bg-white/10 text-lg" onclick="switchTab('missions')">📋 Missions</button>
+                <button class="tab px-6 py-3 rounded-lg bg-white/10 text-lg" onclick="switchTab('shop')">🛒 Market</button>
+                <button class="tab px-6 py-3 rounded-lg bg-white/10 text-lg" onclick="switchTab('about')">ℹ️ About</button>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="w-full px-4 py-6">
+            <div class="container-wide">
+
+                <!-- VILLAGE TAB -->
+                <div id="tab-village" class="tab-content block relative">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-frogGreen">Build Your Empire, Rule the Swamp</h2>
+                    <p class="text-center max-w-4xl mx-auto mb-8 text-lg opacity-90">Start small, grow strong, and turn your humble pond into a legendary kingdom.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div class="md:col-span-2 lg:col-span-3 xl:col-span-4 bg-gradient-to-r from-frogGreen/30 to-baseBlue/30 rounded-xl p-6 building-hover">
+                            <h3 class="text-3xl font-bold text-center mb-3">🏰 Kingdom Hall</h3>
+                            <p class="text-center text-lg opacity-90 mb-4">The heart of your realm. Upgrade to unlock new buildings.</p>
+                            <div class="flex justify-around text-center my-3 text-xl">
+                                <span>Level: <b id="hallLvl">1</b></span>
+                                <span>Cost: 1,000 Gold</span>
+                            </div>
+                            <button onclick="upgradeBuilding('hall')" class="btn-upgrade w-full mt-4 bg-goldCoin hover:bg-yellow-400 text-black py-4 rounded-lg font-bold text-xl">Upgrade</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-goldCoin mb-2">⛏️ Gold Mine</h3>
+                            <p class="text-base opacity-80 mb-4">Produces gold automatically every minute.</p>
+                            <div class="flex justify-between items-center my-3 text-lg">
+                                <span>Level: <b id="mineLvl">1</b></span>
+                                <span>Rate: +<b id="mineRate">5</b> / min</span>
+                            </div>
+                            <button onclick="upgradeBuilding('mine')" class="btn-upgrade w-full mt-4 bg-woodBrown hover:bg-amber-700 py-3 rounded-lg font-bold text-lg">Upgrade • 200 Water</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-blue-300 mb-2">💧 Water Reservoir</h3>
+                            <p class="text-base opacity-80 mb-4">Stores and produces fresh water.</p>
+                            <div class="flex justify-between items-center my-3 text-lg">
+                                <span>Level: <b id="pondLvl">1</b></span>
+                                <span>Rate: +<b id="pondRate">10</b> / min</span>
+                            </div>
+                            <button onclick="upgradeBuilding('pond')" class="btn-upgrade w-full mt-4 bg-sky-600 hover:bg-sky-700 py-3 rounded-lg font-bold text-lg">Upgrade • 100 Leaves</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-green-200 mb-2">🌿 Lily Farm</h3>
+                            <p class="text-base opacity-80 mb-4">Grows leaves for construction and food.</p>
+                            <div class="flex justify-between items-center my-3 text-lg">
+                                <span>Level: <b id="farmLvl">1</b></span>
+                                <span>Rate: +<b id="farmRate">8</b> / min</span>
+                            </div>
+                            <button onclick="upgradeBuilding('farm')" class="btn-upgrade w-full mt-4 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-lg font-bold text-lg">Upgrade • 150 Gold</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-amber-400 mb-2">🪙 Gold Storage</h3>
+                            <p class="text-base opacity-80 mb-4">Increases your maximum gold capacity.</p>
+                            <div class="flex justify-between items-center my-3 text-lg">
+                                <span>Level: <b id="goldStoreLvl">1</b></span>
+                                <span>Max: <b id="goldStoreCap">2000</b></span>
+                            </div>
+                            <button onclick="upgradeBuilding('goldStore')" class="btn-upgrade w-full mt-4 bg-amber-700 hover:bg-amber-800 py-3 rounded-lg font-bold text-lg">Upgrade • 300 Water</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-battleRed mb-2">🛡️ Defense Tower</h3>
+                            <p class="text-base opacity-80 mb-4">Protects your lands from enemy attacks.</p>
+                            <div class="flex justify-between items-center my-3 text-lg">
+                                <span>Level: <b id="defenseLvl">1</b></span>
+                                <span>Defense: <b id="defensePower">10</b></span>
+                            </div>
+                            <button onclick="upgradeBuilding('defense')" class="btn-upgrade w-full mt-4 bg-red-700 hover:bg-red-800 py-3 rounded-lg font-bold text-lg">Upgrade • 250 Gold</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-battleRed mb-2">⚔️ Frog Barracks</h3>
+                            <p class="text-base opacity-80 mb-4">Trains and houses your army of frogs.</p>
+                            <div class="flex justify-between items-center my-3 text-lg">
+                                <span>Level: <b id="barrackLvl">1</b></span>
+                                <span>Capacity: <b id="barrackCap">50</b></span>
+                            </div>
+                            <button onclick="upgradeBuilding('barracks')" class="btn-upgrade w-full mt-4 bg-red-600 hover:bg-red-700 py-3 rounded-lg font-bold text-lg">Upgrade • 300 Gold</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ARMY TAB -->
+                <div id="tab-army" class="tab-content hidden relative">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-frogGreen">Forge Your Army, Conquer the Swamp</h2>
+                    <p class="text-center max-w-4xl mx-auto mb-8 text-lg opacity-90">Train different frogs to build a strong force.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white/10 rounded-xl p-6 text-center building-hover">
+                            <div class="text-7xl frog-animate mb-4">🐸</div>
+                            <h3 class="text-2xl font-bold mb-2">Warrior Frog</h3>
+                            <p class="text-base opacity-80 mb-4">Fast and affordable for early expansion.</p>
+                            <div class="flex justify-between my-4 text-lg">
+                                <span>ATK: 10</span>
+                                <span>DEF: 5</span>
+                                <span>Cost: 10 Food</span>
+                            </div>
+                            <button onclick="trainFrog('basic', 5)" class="bg-frogGreen hover:bg-green-600 w-full py-3 rounded-lg font-bold text-lg">Train 5 • 50 Food</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-6 text-center building-hover">
+                            <div class="text-7xl frog-animate mb-4">🐸⚔️</div>
+                            <h3 class="text-2xl font-bold mb-2">Elite Frog</h3>
+                            <p class="text-base opacity-80 mb-4">Stronger and more durable.</p>
+                            <div class="flex justify-between my-4 text-lg">
+                                <span>ATK: 25</span>
+                                <span>DEF: 15</span>
+                                <span>Cost: 30 Food</span>
+                            </div>
+                            <button onclick="trainFrog('elite', 3)" class="bg-battleRed hover:bg-red-700 w-full py-3 rounded-lg font-bold text-lg">Train 3 • 90 Food</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-6 text-center building-hover">
+                            <div class="text-7xl frog-animate mb-4">🐸🔨</div>
+                            <h3 class="text-2xl font-bold mb-2">Heavy Frog</h3>
+                            <p class="text-base opacity-80 mb-4">Slow but deals massive damage.</p>
+                            <div class="flex justify-between my-4 text-lg">
+                                <span>ATK: 45</span>
+                                <span>DEF: 30</span>
+                                <span>Cost: 60 Food</span>
+                            </div>
+                            <button onclick="trainFrog('heavy', 2)" class="bg-orange-600 hover:bg-orange-700 w-full py-3 rounded-lg font-bold text-lg">Train 2 • 120 Food</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-6 text-center building-hover">
+                            <div class="text-7xl frog-animate mb-4">🐸💨</div>
+                            <h3 class="text-2xl font-bold mb-2">Scout Frog</h3>
+                            <p class="text-base opacity-80 mb-4">Fast for quick attacks and scouting.</p>
+                            <div class="flex justify-between my-4 text-lg">
+                                <span>ATK: 8</span>
+                                <span>DEF: 3</span>
+                                <span>Cost: 8 Food</span>
+                            </div>
+                            <button onclick="trainFrog('scout', 8)" class="bg-cyan-600 hover:bg-cyan-700 w-full py-3 rounded-lg font-bold text-lg">Train 8 • 64 Food</button>
+                        </div>
+                    </div>
+                    <div class="mt-8 p-6 bg-white/10 rounded-lg text-center">
+                        <h4 class="text-2xl font-bold mb-4">Army Overview</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-xl">
+                            <span>Total Frogs: <b id="totalFrogs">0</b></span>
+                            <span>Warriors: <b id="countBasic">0</b></span>
+                            <span>Elites: <b id="countElite">0</b></span>
+                            <span>Heavy: <b id="countHeavy">0</b></span>
+                            <span>Scouts: <b id="countScout">0</b></span>
+                            <span class="md:col-span-5 text-2xl text-frogGreen">Army Power: <b id="armyPower">0</b></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RESEARCH TAB -->
+                <div id="tab-research" class="tab-content hidden relative">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-labPurple">Advance Your Knowledge, Strengthen Your Realm</h2>
+                    <p class="text-center max-w-4xl mx-auto mb-8 text-lg opacity-90">Unlock permanent improvements for your kingdom.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-labPurple mb-2">Combat Training</h3>
+                            <p class="text-base opacity-80 mb-4">+5% attack power per level</p>
+                            <div class="flex justify-between my-3 text-lg">
+                                <span>Level: <b id="resAttackLvl">0</b></span>
+                                <span>Bonus: +<b id="resAttackBonus">0</b>%</span>
+                            </div>
+                            <button onclick="upgradeResearch('attack')" class="w-full bg-labPurple hover:bg-purple-700 py-3 rounded-lg font-bold text-lg">Research • 500 Gold</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-labPurple mb-2">Armor Techniques</h3>
+                            <p class="text-base opacity-80 mb-4">+5% defense power per level</p>
+                            <div class="flex justify-between my-3 text-lg">
+                                <span>Level: <b id="resDefLvl">0</b></span>
+                                <span>Bonus: +<b id="resDefBonus">0</b>%</span>
+                            </div>
+                            <button onclick="upgradeResearch('defense')" class="w-full bg-labPurple hover:bg-purple-700 py-3 rounded-lg font-bold text-lg">Research • 450 Water</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-labPurple mb-2">Efficient Production</h3>
+                            <p class="text-base opacity-80 mb-4">+8% resource output per level</p>
+                            <div class="flex justify-between my-3 text-lg">
+                                <span>Level: <b id="resProdLvl">0</b></span>
+                                <span>Bonus: +<b id="resProdBonus">0</b>%</span>
+                            </div>
+                            <button onclick="upgradeResearch('production')" class="w-full bg-labPurple hover:bg-purple-700 py-3 rounded-lg font-bold text-lg">Research • 600 Leaves</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 building-hover">
+                            <h3 class="text-2xl font-bold text-labPurple mb-2">Storage Mastery</h3>
+                            <p class="text-base opacity-80 mb-4">+10% maximum capacity per level</p>
+                            <div class="flex justify-between my-3 text-lg">
+                                <span>Level: <b id="resStoreLvl">0</b></span>
+                                <span>Bonus: +<b id="resStoreBonus">0</b>%</span>
+                            </div>
+                            <button onclick="upgradeResearch('storage')" class="w-full bg-labPurple hover:bg-purple-700 py-3 rounded-lg font-bold text-lg">Research • 550 Gold</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BATTLE TAB -->
+                <div id="tab-battle" class="tab-content hidden relative">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-battleRed">Fight for Glory, Win for Resources</h2>
+                    <p class="text-center max-w-4xl mx-auto mb-8 text-lg opacity-90">Test your strength and earn great rewards.</p>
+                    <div class="max-w-3xl mx-auto bg-white/10 rounded-xl p-8 text-center">
+                        <div class="text-8xl my-6 pulse">⚔️🐸💥</div>
+                        <p class="mb-4 text-xl">Your Battle Power: <b id="battlePower">0</b></p>
+                        <p class="mb-6 text-xl">Estimated Win Chance: <b id="winChance">0%</b></p>
+                        <button onclick="startBattle()" class="bg-battleRed hover:bg-red-700 px-10 py-4 rounded-lg font-bold text-2xl">Start Battle</button>
+                        <div id="battleResult" class="mt-8 text-xl font-semibold p-4 rounded-lg hidden"></div>
+                    </div>
+                </div>
+
+                <!-- MISSIONS TAB -->
+                <div id="tab-missions" class="tab-content hidden relative">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-frogGreen">Complete Tasks, Earn Great Rewards</h2>
+                    <p class="text-center max-w-4xl mx-auto mb-8 text-lg opacity-90">Complete daily and special missions to grow faster.</p>
+                    <div class="max-w-3xl mx-auto space-y-5">
+                        <div class="bg-white/10 rounded-lg p-5 flex justify-between items-center">
+                            <div>
+                                <h4 class="text-xl font-bold">Daily Login</h4>
+                                <p class="text-base opacity-80 mt-1">+200 Gold • +300 Water</p>
+                            </div>
+                            <button id="claimDailyBtn" onclick="claimDaily()" class="bg-goldCoin hover:bg-yellow-400 text-black px-5 py-2 rounded font-bold text-lg">Claim</button>
+                        </div>
+                        <div class="bg-white/10 rounded-lg p-5 flex justify-between items-center">
+                            <div>
+                                <h4 class="text-xl font-bold">First Upgrade</h4>
+                                <p class="text-base opacity-80 mt-1">Upgrade any building once</p>
+                            </div>
+                            <button id="quest1Btn" onclick="claimQuest('upgrade')" class="bg-green-600 hover:bg-green-700 px-5 py-2 rounded font-bold text-lg">Complete</button>
+                        </div>
+                        <div class="bg-white/10 rounded-lg p-5 flex justify-between items-center">
+                            <div>
+                                <h4 class="text-xl font-bold">Victory Strike</h4>
+                                <p class="text-base opacity-80 mt-1">Win 1 battle</p>
+                            </div>
+                            <button id="quest2Btn" onclick="claimQuest('battle')" class="bg-green-600 hover:bg-green-700 px-5 py-2 rounded font-bold text-lg">Complete</button>
+                        </div>
+                        <div class="bg-white/10 rounded-lg p-5 flex justify-between items-center">
+                            <div>
+                                <h4 class="text-xl font-bold">Army Builder</h4>
+                                <p class="text-base opacity-80 mt-1">Train 10 or more frogs</p>
+                            </div>
+                            <button id="quest3Btn" onclick="claimQuest('train')" class="bg-green-600 hover:bg-green-700 px-5 py-2 rounded font-bold text-lg">Complete</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MARKET TAB -->
+                <div id="tab-shop" class="tab-content hidden relative">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-coinYellow">Trade Resources, Gain Advantages</h2>
+                    <p class="text-center max-w-4xl mx-auto mb-8 text-lg opacity-90">Exchange resources and buy special boosts.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white/10 rounded-xl p-5 text-center building-hover">
+                            <h3 class="text-2xl font-bold mb-3">Gold Pack</h3>
+                            <p class="text-lg mb-5">+500 Gold instantly</p>
+                            <button onclick="buyItem('gold', 500)" class="w-full mt-2 bg-amber-600 hover:bg-amber-700 px-4 py-3 rounded font-bold text-lg">Buy • 200 Leaves</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 text-center building-hover">
+                            <h3 class="text-2xl font-bold mb-3">Water Pack</h3>
+                            <p class="text-lg mb-5">+1,000 Water instantly</p>
+                            <button onclick="buyItem('water', 1000)" class="w-full mt-2 bg-sky-600 hover:bg-sky-700 px-4 py-3 rounded font-bold text-lg">Buy • 150 Gold</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 text-center building-hover">
+                            <h3 class="text-2xl font-bold mb-3">24h Protection Shield</h3>
+                            <p class="text-lg mb-5">Prevents enemy raids for 24 hours</p>
+                            <button onclick="buyShield()" class="w-full mt-2 bg-shieldBlue hover:bg-blue-700 px-4 py-3 rounded font-bold text-lg">Buy • 800 Gold</button>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-5 text-center building-hover">
+                            <h3 class="text-2xl font-bold mb-3">1h Production Boost</h3>
+                            <p class="text-lg mb-5">Doubles all resource output for 1 hour</p>
+                            <button onclick="buyBoost()" class="w-full mt-2 bg-frogGreen hover:bg-green-700 px-4 py-3 rounded font-bold text-lg">Buy • 600 Gold</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABOUT TAB -->
+                <div id="tab-about" class="tab-content hidden">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-6 text-frogGreen">About BaseFroggy</h2>
+                    <div class="bg-white/10 rounded-xl p-7 mb-8">
+                        <h3 class="text-2xl font-bold mb-4">🐸 A New Adventure on Base</h3>
+                        <p class="mb-4 text-lg leading-relaxed opacity-90">BaseFroggy is a strategy game built for the Base network. Build, fight, and grow your kingdom in a fun and engaging experience.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="text-center text-lg opacity-65 py-8 border-t border-white/10 mt-8">
+            © 2026 BaseFroggy • Build • Fight • Grow • Powered by Base Network
+        </footer>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        let web3, userAccount, connectedType = "";
+        let isConnected = false;
+        let activeModal = "";
+
+        let gold = 500, water = 500, leaves = 200, food = 150;
+        let goldMax = 2000, waterMax = 5000, leavesMax = 3000, foodMax = 2500;
+        let playerLevel = 1, frogPower = 100, rankPoints = 0;
+        let mineLvl = 1, pondLvl = 1, farmLvl = 1, barrackLvl = 1, hallLvl = 1;
+        let goldStoreLvl = 1, defenseLvl = 1;
+        let mineRate = 5, pondRate = 10, farmRate = 8;
+        let defensePower = 10;
+        let totalFrogs = 0, armyPower = 0;
+        let frogs = { basic: 0, elite: 0, heavy: 0, scout: 0 };
+        let research = { attack: 0, defense: 0, production: 0, storage: 0 };
+        let dailyClaimed = false, shieldActive = false, boostActive = false;
+        let winCount = 0, upgradeCount = 0, trainCount = 0;
+
+        // --- MODAL FUNCTIONS ---
+        function openModal(label, type) {
+            activeModal = type;
+            document.getElementById('modalLabel').textContent = label;
+            document.getElementById('modalInput').value = "";
+            document.getElementById('inputModal').style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById('inputModal').style.display = "none";
+            activeModal = "";
+        }
+
+        function confirmInput() {
+            const val = document.getElementById('modalInput').value.trim();
+            if (!val) {
+                alert("Username cannot be empty!");
+                return;
+            }
+            if (activeModal === "farcaster") connectFarcasterFinal(val);
+            if (activeModal === "twitter") connectTwitterFinal(val);
+            closeModal();
+        }
+
+        // --- SAVE & LOAD ---
+        function getSaveKey() {
+            return `baseFroggy_${connectedType}_${userAccount}`;
+        }
+
+        function saveGame() {
+            const data = {
+                gold, water, leaves, food, goldMax, waterMax, leavesMax, foodMax,
+                playerLevel, frogPower, rankPoints, mineLvl, pondLvl, farmLvl,
+                barrackLvl, hallLvl, goldStoreLvl, defenseLvl, mineRate, pondRate,
+                farmRate, defensePower, totalFrogs, armyPower, frogs, research,
+                dailyClaimed, shieldActive, boostActive, winCount, upgradeCount, trainCount
+            };
+            if (isConnected) localStorage.setItem(getSaveKey(), JSON.stringify(data));
+        }
+
+        function loadGame() {
+            const save = localStorage.getItem(getSaveKey());
+            if (!save) return;
+            const d = JSON.parse(save);
+            Object.assign(window, d);
+            updateUI();
+        }
+
+        // --- NOTIFICATION ---
+        function showNotification(text) {
+            const el = document.getElementById('notification');
+            document.getElementById('notifText').textContent = text;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        // --- TAB SWITCH ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            document.querySelectorAll('.tab').forEach(t => {
+                if (t.getAttribute('onclick') === `switchTab('${tabName}')`) t.classList.add('tab-active');
+            });
+        }
+
+        // --- WALLET CONNECTION ---
+        async function connectCoinbase() {
+            if (!window.ethereum) {
+                alert('❌ No wallet found! Please install MetaMask or Coinbase Wallet.');
+                return;
+            }
+            try {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x2105',
+                        chainName: 'Base Mainnet',
+                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                        rpcUrls: ['https://mainnet.base.org'],
+                        blockExplorerUrls: ['https://basescan.org']
+                    }]
+                });
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0].toLowerCase();
+                connectedType = "Wallet";
+                isConnected = true;
+                loadGame();
+                updateConnectionUI();
+                showNotification('✅ Wallet connected successfully!');
+                if (!window.productionInterval) {
+                    window.productionInterval = setInterval(generateResources, 60000);
+                }
+            } catch (err) {
+                alert('❌ Connection failed: ' + err.message);
+            }
+        }
+
+        function connectFarcaster() {
+            openModal("Enter your Farcaster username (without @):", "farcaster");
+        }
+
+        function connectFarcasterFinal(username) {
+            userAccount = username.toLowerCase();
+            connectedType = "Farcaster";
+            isConnected = true;
+            loadGame();
+            updateConnectionUI();
+            showNotification('✅ Farcaster connected!');
+            if (!window.productionInterval) {
+                window.productionInterval = setInterval(generateResources, 60000);
+            }
+        }
+
+        function connectTwitter() {
+            openModal("Enter your X / Twitter username (without @):", "twitter");
+        }
+
+        function connectTwitterFinal(username) {
+            if (!/^[a-zA-Z0-9_]{1,15}$/.test(username)) {
+                alert("❌ Invalid username! Use only letters, numbers, and underscores.");
+                return;
+            }
+            userAccount = username.toLowerCase();
+            connectedType = "Twitter";
+            isConnected = true;
+            loadGame();
+            updateConnectionUI();
+            showNotification('✅ X / Twitter connected!');
+            if (!window.productionInterval) {
+                window.productionInterval = setInterval(generateResources, 60000);
+            }
+        }
+
+        function updateConnectionUI() {
+            document.getElementById('connectWalletBtn').textContent = '✅ Connected';
+            document.getElementById('connectWalletBtn').classList.remove('bg-baseBlue');
+            document.getElementById('connectWalletBtn').classList.add('bg-green-600');
+            if (connectedType === "Wallet") {
+                document.getElementById('walletDisplay').textContent = `${connectedType}: ${userAccount.slice(0, 10)}...`;
+            } else {
+                document.getElementById('walletDisplay').textContent = `${connectedType}: @${userAccount}`;
+            }
+        }
+
+        // --- AUTO RESOURCE GENERATION ---
+        function generateResources() {
+            const prodMultiplier = 1 + (research.production * 0.08) * (boostActive ? 2 : 1);
+            gold = Math.min(gold + Math.round(mineRate * prodMultiplier), goldMax);
+            water = Math.min(water + Math.round(pondRate * prodMultiplier), waterMax);
+            leaves = Math.min(leaves + Math.round(farmRate * prodMultiplier), leavesMax);
+            updateUI();
+            saveGame();
+        }
+
+        // --- UPDATE ALL UI ---
+        function updateUI() {
+            document.getElementById('goldAmount').textContent = gold;
+            document.getElementById('waterAmount').textContent = water;
+            document.getElementById('leafAmount').textContent = leaves;
+            document.getElementById('foodAmount').textContent = food;
+            document.getElementById('goldMax').textContent = goldMax;
+            document.getElementById('waterMax').textContent = waterMax;
+            document.getElementById('leafMax').textContent = leavesMax;
+            document.getElementById('foodMax').textContent = foodMax;
+
+            document.getElementById('hallLvl').textContent = hallLvl;
+            document.getElementById('mineLvl').textContent = mineLvl;
+            document.getElementById('mineRate').textContent = mineRate;
+            document.getElementById('pondLvl').textContent = pondLvl;
+            document.getElementById('pondRate').textContent = pondRate;
+            document.getElementById('farmLvl').textContent = farmLvl;
+            document.getElementById('farmRate').textContent = farmRate;
+            document.getElementById('goldStoreLvl').textContent = goldStoreLvl;
+            document.getElementById('goldStoreCap').textContent = goldMax;
+            document.getElementById('defenseLvl').textContent = defenseLvl;
+            document.getElementById('defensePower').textContent = defensePower;
+            document.getElementById('barrackLvl').textContent = barrackLvl;
+            document.getElementById('barrackCap').textContent = barrackLvl * 50;
+
+            document.getElementById('playerLevel').textContent = playerLevel;
+            document.getElementById('frogPower').textContent = frogPower;
+            document.getElementById('rankPoints').textContent = rankPoints;
+
+            document.getElementById('totalFrogs').textContent = totalFrogs;
+            document.getElementById('countBasic').textContent = frogs.basic;
+            document.getElementById('countElite').textContent = frogs.elite;
+            document.getElementById('countHeavy').textContent = frogs.heavy;
+            document.getElementById('countScout').textContent = frogs.scout;
+
+            armyPower = (frogs.basic * 10) + (frogs.elite * 25) + (frogs.heavy * 45) + (frogs.scout * 8);
+            armyPower = Math.round(armyPower * (1 + research.attack * 0.05));
+            document.getElementById('armyPower').textContent = armyPower;
+            document.getElementById('battlePower').textContent = armyPower + Math.round(defensePower * (1 + research.defense * 0.05));
+
+            document.getElementById('resAttackLvl').textContent = research.attack;
+            document.getElementById('resAttackBonus').textContent = research.attack * 5;
+            document.getElementById('resDefLvl').textContent = research.defense;
+            document.getElementById('resDefBonus').textContent = research.defense * 5;
+            document.getElementById('resProdLvl').textContent = research.production;
+            document.getElementById('resProdBonus').textContent = research.production * 8;
+            document.getElementById('resStoreLvl').textContent = research.storage;
+            document.getElementById('resStoreBonus').textContent = research.storage * 10;
+        }
+
+        // --- BUILDING UPGRADE ---
+        function upgradeBuilding(type) {
+            if (!isConnected) {
+                alert("⚠️ Please connect your account first!");
+                return;
+            }
+            let costGold = 0, costWater = 0, costLeaves = 0;
+            switch(type) {
+                case 'hall':
+                    costGold = hallLvl * 1000;
+                    break;
+                case 'mine':
+                    costWater = mineLvl * 200;
+                    break;
+                case 'pond':
+                    costLeaves = pondLvl * 100;
+                    break;
+                case 'farm':
+                    costGold = farmLvl * 150;
+                    break;
+                case 'goldStore':
+                    costWater = goldStoreLvl * 300;
+                    break;
+                case 'defense':
+                    costGold = defenseLvl * 250;
+                    break;
+                case 'barracks':
+                    costGold = barrackLvl * 300;
+                    break;
+            }
+            if (gold >= costGold && water >= costWater && leaves >= costLeaves) {
+                gold -= costGold;
+                water -= costWater;
+                leaves -= costLeaves;
+                switch(type) {
+                    case 'hall': hallLvl++; playerLevel++; break;
+                    case 'mine': mineLvl++; mineRate += 5; break;
+                    case 'pond': pondLvl++; pondRate += 10; break;
+                    case 'farm': farmLvl++; farmRate += 8; break;
+                    case 'goldStore': goldStoreLvl++; goldMax = Math.round(goldMax * 1.3); break;
+                    case 'defense': defenseLvl++; defensePower += 10; break;
+                    case 'barracks': barrackLvl++; break;
+                }
+                upgradeCount++;
+                updateUI();
+                saveGame();
+                showNotification(`✅ Upgraded ${type} successfully!`);
+            } else {
+                alert("❌ Not enough resources!");
+            }
+        }
+
+        // --- TRAIN FROGS ---
+        function trainFrog(type, amount) {
+            if (!isConnected) {
+                alert("⚠️ Please connect your account first!");
+                return;
+            }
+            let cost = 0;
+            switch(type) {
+                case 'basic': cost = 10 * amount; break;
