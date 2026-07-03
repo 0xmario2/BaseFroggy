@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaseFroggy | Earn $FROGGY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        baseBlue: '#0052FF',
+                        frogGreen: '#2E8B57',
+                        pondDark: '#051A14',
+                        goldCoin: '#FFD700',
+                        battleRed: '#DC2626',
+                        labPurple: '#7C3AED',
+                    },
+                    fontFamily: {
+                        game: ['Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        html {
+            scroll-behavior: smooth;
+            font-size: 19px;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #051A14 0%, #002666 50%, #1A5D3A 100%);
+            background-attachment: fixed;
+            color: #ffffff;
+            line-height: 1.7;
+        }
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.85);
+            min-height: 100vh;
+            padding: 0 20px 60px;
+        }
+        .section {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        h1 {
+            font-size: 48px;
+            color: #2E8B57;
+            text-align: center;
+            margin: 0;
+            padding: 40px 0 20px;
+        }
+        h2 {
+            font-size: 32px;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        h3 {
+            font-size: 26px;
+            color: #ffffff;
+            margin: 25px 0 15px;
+        }
+        ul {
+            padding-left: 25px;
+        }
+        li {
+            margin: 10px 0;
+        }
+        .roadmap-phase {
+            margin: 25px 0;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            border-left: 5px solid;
+        }
+        .phase1 { border-color: #2E8B57; }
+        .phase2 { border-color: #FFD700; }
+        .phase3 { border-color: #DC2626; }
+        footer {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0,0,0,0.9);
+            margin-top: 50px;
+            border-top: 2px solid rgba(255,255,255,0.1);
+        }
+        a {
+            color: #FFD700;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .tab {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            width: 100%;
+            text-align: left;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.1);
+        }
+        .tab.active {
+            background: #2E8B57;
+            color: #ffffff;
+            border-color: #3BA76F;
+            box-shadow: 0 0 10px rgba(46, 139, 87, 0.6);
+        }
+        .tab-content {
+            display: none;
+            margin-top: 30px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: rgba(20, 30, 40, 0.92);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 30px;
+        }
+        button {
+            cursor: pointer;
+            font-size: 19px;
+            font-weight: bold;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .notification {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 9999;
+            transform: translateX(450px);
+            transition: transform 0.3s ease;
+            background: #ffffff;
+            color: #111111;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            padding: 16px 20px;
+            max-width: 350px;
+            font-size: 18px;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .contract-box {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid #FFD700;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+
+        <div id="notification" class="notification">
+            <p id="notifText"></p>
+        </div>
+
+        <h1>🐸 BASEFROGGY</h1>
+        <p class="text-center text-xl mb-4">Build • Fight • Earn $FROGGY</p>
+
+        <div class="section">
+            <h2>🪙 $FROGGY TOKEN</h2>
+            <p>Our official token <strong>$FROGGY</strong> is live on Base Chain. All rewards earned in-game are paid directly in $FROGGY tokens.</p>
+            <div class="contract-box mt-4">
+                Contract: 0x2fc7ccaf5400ab3afec8f797a9916d2e24a2cba3
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎮 GAME INTERFACE</h2>
+            <div class="card">
+                <h3 class="text-center mb-4">Your Status</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span>Wallet:</span>
+                        <span id="walletDisplay">Not Connected</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>$FROGGY Balance:</span>
+                        <span id="froggy" class="text-goldCoin">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Water:</span>
+                        <span id="water" class="text-blue-300">500</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Food:</span>
+                        <span id="food" class="text-yellow-300">150</span>
+                    </div>
+                </div>
+                <button onclick="connectWallet()" class="mt-6 bg-baseBlue">Connect Wallet</button>
+            </div>
+
+            <div class="space-y-3">
+                <button class="tab active" onclick="openTab('village')">🏰 Village</button>
+                <button class="tab" onclick="openTab('army')">⚔️ Army</button>
+                <button class="tab" onclick="openTab('battle')">💥 Battle & Earn</button>
+                <button class="tab" onclick="openTab('missions')">📋 Daily Rewards</button>
+                <button class="tab" onclick="openTab('shop')">🛒 Exchange</button>
+            </div>
+
+            <div>
+                <div id="village" class="tab-content active">
+                    <div class="card">
+                        <h3 class="text-goldCoin">⛏️ Production Mine</h3>
+                        <p>Level: <span id="mineLevel">1</span></p>
+                        <p>Generates: +<span id="mineRate">2</span> $FROGGY / hour</p>
+                        <p class="my-3">Upgrade Cost: 200 Water</p>
+                        <button onclick="upgradeMine()" class="bg-amber-700">Upgrade</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-blue-300">💧 Water Pump</h3>
+                        <p>Level: <span id="pumpLevel">1</span></p>
+                        <p>Production: +<span id="pumpRate">10</span> Water / minute</p>
+                        <p class="my-3">Upgrade Cost: 5 $FROGGY</p>
+                        <button onclick="upgradePump()" class="bg-sky-600">Upgrade</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-red-400">🏗️ Barracks</h3>
+                        <p>Level: <span id="barrackLevel">1</span></p>
+                        <p>Capacity: <span id="barrackCap">20</span> Troops</p>
+                        <p class="my-3">Upgrade Cost: 10 $FROGGY</p>
+                        <button onclick="upgradeBarracks()" class="bg-red-700">Upgrade</button>
+                    </div>
+                </div>
+
+                <div id="army" class="tab-content">
+                    <div class="card">
+                        <h3 class="text-frogGreen">🐸 Warrior Frog</h3>
+                        <p>Attack: 10 | Defense: 5</p>
+                        <p>Cost: 10 Food</p>
+                        <p class="my-3">Owned: <span id="warriorCount">0</span></p>
+                        <button onclick="trainWarrior()" class="bg-frogGreen">Train 1</button>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-battleRed">🐸⚔️ Elite Frog</h3>
+                        <p>Attack: 25 | Defense: 15</p>
+                        <p>Cost: 30 Food</p>
+                        <p class="my-3">Owned: <span id="eliteCount">0</span></p>
+                        <button onclick="trainElite()" class="bg-battleRed">Train 1</button>
+                    </div>
+                    <div class="card text-center">
+                        <p class="text-xl">Total Power: <span id="totalPower" class="text-goldCoin font-bold">0</span></p>
+                    </div>
+                </div>
+
+                <div id="battle" class="tab-content">
+                    <div class="card text-center">
+                        <div class="text-7xl mb-6">⚔️🐸💥</div>
+                        <p class="text-xl mb-3">Your Power: <span id="battlePower" class="text-goldCoin font-bold">0</span></p>
+                        <p class="text-xl mb-5">Win Chance: <span id="winChance" class="text-frogGreen font-bold">0%</span></p>
+                        <button onclick="startBattle()" class="bg-battleRed py-4 text-2xl">Fight & Earn $FROGGY</button>
+                        <div id="battleResult" class="mt-7 p-5 rounded-lg hidden text-xl font-semibold"></div>
+                    </div>
+                </div>
+
+                <div id="missions" class="tab-content">
+                    <div class="card flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-xl">Daily Login Reward</h4>
+                            <p class="text-lg opacity-90">Get: 15 $FROGGY + 100 Water</p>
+                        </div>
+                        <button id="dailyBtn" onclick="claimDaily()" class="bg-goldCoin text-black px-5 py-2 w-auto">Claim</button>
+                    </div>
+                    <div class="card flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-xl">First Victory Reward</h4>
+                            <p class="text-lg opacity-90">Get: 25 $FROGGY + 150 Food</p>
+                        </div>
+                        <button id="battleQuestBtn" onclick="claimBattleQuest()" class="bg-green-600 px-5 py-2 w-auto">Claim</button>
+                    </div>
+                </div>
+
+                <div id="shop" class="tab-content">
+                    <div class="card text-center">
+                        <h3 class="text-xl">Exchange Water → $FROGGY</h3>
+                        <p class="my-3">Rate: 200 Water = 5 $FROGGY</p>
+                        <button onclick="buyFroggy()" class="bg-amber-600">Exchange Now</button>
+                    </div>
+                    <div class="card text-center">
+                        <h3 class="text-xl">Exchange $FROGGY → Food</h3>
+                        <p class="my-3">Rate: 5 $FROGGY = 300 Food</p>
+                        <button onclick="buyFood()" class="bg-yellow-600">Exchange Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📖 How to Play</h2>
+            <h3>Step 1: Connect Your Wallet</h3>
+            <p>Use MetaMask or Coinbase Wallet to connect to the Base network. This keeps your progress secure and ready for future token transfers.</p>
+
+            <h3>Step 2: Build Your Village</h3>
+            <p>Upgrade your Mine to generate $FROGGY automatically and Water Pump to get more resources.</p>
+
+            <h3>Step 3: Train Your Army</h3>
+            <p>Use Food to train Warrior Frogs and Elite Frogs — stronger troops mean higher win chances and more rewards.</p>
+
+            <h3>Step 4: Battle & Earn</h3>
+            <p>Enter battles, win against enemies, and earn $FROGGY tokens directly into your in-game balance.</p>
+        </div>
+
+        <div class="section">
+            <h2>🗺️ Development Roadmap</h2>
+            <div class="roadmap-phase phase1">
+                <h3>✅ Phase 1: Launch & Core Gameplay</h3>
+                <ul>
+                    <li>Village building and resource system</li>
+                    <li>Army training and battle mechanics</li>
+                    <li>Wallet integration for Base network</li>
+                    <li>Daily rewards and exchange system</li>
+                    <li>$FROGGY token reward system implemented</li>
+                </ul>
+            </div>
+            <div class="roadmap-phase phase2">
+                <h3>🚧 Phase 2: Expansion & Upgrades</h3>
+                <ul>
+                    <li>New building types and upgrades</li>
+                    <li>Advanced units and equipment</li>
+                    <li>Leaderboard and ranking system</li>
+                    <li>Defense mechanics</li>
+                    <li>Direct on-chain $FROGGY withdrawal</li>
+                </ul>
+            </div>
+            <div class="roadmap-phase phase3">
+                <h3>🔜 Phase 3: Multiplayer & Economy</h3>
+                <ul>
+                    <li>Alliance system and wars</li>
+                    <li>Player-to-player marketplace</li>
+                    <li>Seasonal events and rewards</li>
+                    <li>Mobile responsive version</li>
+                    <li>Full tokenomics and staking</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>© 2026 BaseFroggy</p>
+            <p>Token: $FROGGY | Contract: 0x2fc7ccaf5400ab3afec8f797a9916d2e24a2cba3</p>
+            <p>Follow us: @BaseFroggy</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const FROGGY_CONTRACT = "0x2fc7ccaf5400ab3afec8f797a9916d2e24a2cba3";
+        let web3, userAccount, isConnected = false;
+        let froggy = 0, water = 500, food = 150;
+        let mineLevel = 1, mineRate = 2;
+        let pumpLevel = 1, pumpRate = 10;
+        let barrackLevel = 1, barrackCap = 20;
+        let warriors = 0, elites = 0;
+        let dailyClaimed = false, battleQuestDone = false;
+
+        function openTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            updateUI();
+        }
+
+        function showNotification(text) {
+            const el = document.getElementById('notification');
+            document.getElementById('notifText').textContent = text;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert("Please install MetaMask or Coinbase Wallet first!");
+                return;
+            }
+            try {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x2105',
+                        chainName: 'Base Mainnet',
+                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                        rpcUrls: ['https://mainnet.base.org'],
+                        blockExplorerUrls: ['https://basescan.org']
+                    }]
+                });
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0];
+                isConnected = true;
+                document.getElementById('walletDisplay').textContent = userAccount.slice(0, 8) + "...";
+                showNotification("Wallet connected successfully!");
+                startProductionTimer();
+            } catch (err) {
+                alert("Connection failed: " + err.message);
+            }
+        }
+
+        function startProductionTimer() {
+            setInterval(() => {
+                if (!isConnected) return;
+                froggy = parseFloat((froggy + mineRate / 60).toFixed(2));
+                water = Math.min(water + pumpRate, 99999);
+                updateUI();
+            }, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('froggy').textContent = froggy.toFixed(2);
+            document.getElementById('water').textContent = water;
+            document.getElementById('food').textContent = food;
+            document.getElementById('mineLevel').textContent = mineLevel;
+            document.getElementById('mineRate').textContent = mineRate;
+            document.getElementById('pumpLevel').textContent = pumpLevel;
+            document.getElementById('pumpRate').textContent = pumpRate;
+            document.getElementById('barrackLevel').textContent = barrackLevel;
+            document.getElementById('barrackCap').textContent = barrackCap;
+            document.getElementById('warriorCount').textContent = warriors;
+            document.getElementById('eliteCount').textContent = elites;
+
+            const totalPower = (warriors * 10) + (elites * 25);
+            document.getElementById('totalPower').textContent = totalPower;
+            document.getElementById('battlePower').textContent = totalPower;
+            document.getElementById('winChance').textContent = Math.min(95, Math.max(20, Math.round((totalPower / (totalPower + 150)) * 100))) + "%";
+        }
+
+        function upgradeMine() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (water >= 200) {
+                water -= 200;
+                mineLevel++;
+                mineRate += 1;
+                showNotification("Mine upgraded! More $FROGGY per hour.");
+                updateUI();
+            } else alert("Not enough Water!");
+        }
+
+        function upgradePump() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (froggy >= 5) {
+                froggy = parseFloat((froggy - 5).toFixed(2));
+                pumpLevel++;
+                pumpRate += 8;
+                showNotification("Water Pump upgraded!");
+                updateUI();
+            } else alert("Not enough $FROGGY!");
+        }
+
+        function upgradeBarracks() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (froggy >= 10) {
+                froggy = parseFloat((froggy - 10).toFixed(2));
+                barrackLevel++;
+                barrackCap += 20;
+                showNotification("Barracks upgraded!");
+                updateUI();
+            } else alert("Not enough $FROGGY!");
+        }
+
+        function trainWarrior() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (warriors + elites >= barrackCap) return alert("Barracks full!");
+            if (food >= 10) {
+                food -= 10;
+                warriors++;
+                showNotification("Warrior Frog trained!");
+                updateUI();
+            } else alert("Not enough Food!");
+        }
+
+        function trainElite() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (warriors + elites >= barrackCap) return alert("Barracks full!");
+            if (food >= 30) {
+                food -= 30;
+                elites++;
+                showNotification("Elite Frog trained!");
+                updateUI();
+            } else alert("Not enough Food!");
+        }
+
+        function startBattle() {
+            if (!isConnected) return alert("Connect wallet first!");
+            const power = (warriors * 10) + (elites * 25);
+            if (power < 20) return alert("Train more troops first!");
+
+            const winChance = Math.min(95, Math.max(20, Math.round((power / (power + 150)) * 100)));
+            const resultEl = document.getElementById('battleResult');
+
+            if (Math.random() * 100 < winChance) {
+                const rewardFroggy = parseFloat((Math.random() * 15 + 5).toFixed(2));
+                froggy = parseFloat((froggy + rewardFroggy).toFixed(2));
+                resultEl.style.display = "block";
+                resultEl.className = "mt-7 p-5 rounded-lg bg-green-700 text-white text-xl font-semibold";
+                resultEl.textContent = `Victory! You earned ${rewardFroggy} $FROGGY!`;
+                showNotification("Battle won!");
+                if (!battleQuestDone) battleQuestDone = true;
+            } else {
+                const loseFroggy = parseFloat((Math.random() * 3 + 1).toFixed(2));
+                froggy = parseFloat(Math.max(0, froggy - loseFroggy).toFixed(2));
+                resultEl.style.display = "block";
+                resultEl.className = "mt-7 p-5 rounded-lg bg-red-700 text-white text-xl font-semibold";
+                resultEl.textContent = `Defeat! You lost ${loseFroggy} $FROGGY.`;
+                showNotification("Battle lost!");
+            }
+            updateUI();
+        }
+
+        function claimDaily() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (dailyClaimed) return alert("Already claimed today!");
+            froggy = parseFloat((froggy + 15).toFixed(2));
+            water += 100;
+            dailyClaimed = true;
+            document.getElementById('dailyBtn').textContent = "Claimed";
+            document.getElementById('dailyBtn').classList.add("opacity-50");
+            showNotification("Daily reward: +15 $FROGGY");
+            updateUI();
+        }
+
+        function claimBattleQuest() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (!battleQuestDone) return alert("Win one battle first!");
+            froggy = parseFloat((froggy + 25).toFixed(2));
+            food += 150;
+            document.getElementById('battleQuestBtn').textContent = "Claimed";
+            document.getElementById('battleQuestBtn').classList.add("opacity-50");
+            showNotification("Bonus reward: +25 $FROGGY");
+            updateUI();
+        }
+
+        function buyFroggy() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (water >= 200) {
+                water -= 200;
+                froggy = parseFloat((froggy + 5).toFixed(2));
+                showNotification("Exchanged 200 Water → 5 $FROGGY");
+                updateUI();
+            } else alert("Not enough Water!");
+        }
+
+        function buyFood() {
+            if (!isConnected) return alert("Connect wallet first!");
+            if (froggy >= 5) {
+                froggy = parseFloat((froggy - 5).toFixed(2));
+                food += 300;
+                showNotification("Exchanged 5 $FROGGY → 300 Food");
+                updateUI();
+            } else alert("Not enough $FROGGY!");
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
