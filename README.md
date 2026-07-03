@@ -22,12 +22,10 @@ In BaseFroggy, you will build and expand your own frog kingdom, gather resources
 
 ---
 
-## 🌐 Network Details
-- **Network Name**: Base Mainnet
-- **Chain ID**: `0x2105`
-- **RPC URL**: `https://mainnet.base.org`
-- **Block Explorer**: `https://basescan.org`
-- **Official Token**: BASEFROGGY (coming soon)
+## 🌐 Token Details
+- **Name**: froggy
+- **Block Explorer**: `https://basescan.org/token/0x2fc7ccaf5400ab3afec8f797a9916d2e24a2cba3`
+- **Official Token**: $FROGGY is Live 
 
 ---
 
